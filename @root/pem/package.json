@@ -1,0 +1,71 @@
+{
+  "_args": [
+    [
+      "@root/pem@1.0.4",
+      "/home/user/cert-grabber"
+    ]
+  ],
+  "_from": "@root/pem@1.0.4",
+  "_id": "@root/pem@1.0.4",
+  "_inBundle": false,
+  "_integrity": "sha512-rEUDiUsHtild8GfIjFE9wXtcVxeS+ehCJQBwbQQ3IVfORKHK93CFnRtkr69R75lZFjcmKYVc+AXDB+AeRFOULA==",
+  "_location": "/@root/pem",
+  "_phantomChildren": {},
+  "_requested": {
+    "type": "version",
+    "registry": true,
+    "raw": "@root/pem@1.0.4",
+    "name": "@root/pem",
+    "escapedName": "@root%2fpem",
+    "scope": "@root",
+    "rawSpec": "1.0.4",
+    "saveSpec": null,
+    "fetchSpec": "1.0.4"
+  },
+  "_requiredBy": [
+    "/",
+    "/@root/acme",
+    "/@root/csr",
+    "/@root/keypairs"
+  ],
+  "_resolved": "https://registry.npmjs.org/@root/pem/-/pem-1.0.4.tgz",
+  "_spec": "1.0.4",
+  "_where": "/home/user/cert-grabber",
+  "author": {
+    "name": "AJ ONeal",
+    "email": "coolaj86@gmail.com",
+    "url": "https://coolaj86.com/"
+  },
+  "browser": {
+    "./node/native.js": "./browser/native.js"
+  },
+  "description": "VanillaJS, Lightweight, Zero-Dependency, PEM encoder and decoder.",
+  "files": [
+    "*.js",
+    "node",
+    "browser",
+    "dist"
+  ],
+  "keywords": [
+    "PEM",
+    "x509",
+    "ASN.1",
+    "asn1",
+    "RFC7468",
+    "RFC1421",
+    "RFC",
+    "7468",
+    "1421"
+  ],
+  "license": "MPL-2.0",
+  "main": "index.js",
+  "name": "@root/pem",
+  "repository": {
+    "type": "git",
+    "url": "https://git.rootprojects.org/root/pem.js.git"
+  },
+  "scripts": {
+    "test": "node tests"
+  },
+  "version": "1.0.4"
+}
