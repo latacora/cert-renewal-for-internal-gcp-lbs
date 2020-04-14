@@ -12,7 +12,6 @@ const bucket = storage.bucket("certs-bucket-for-testing");
 var fs = require("fs");
 async function get_cert() {
   const bucketResponse = await bucket.getFiles();
-  console.log(bucketResponse[0]);
   const start = Date.now();
   var maintainerEmail = process.env.MAINTAINER_EMAIL;
   var subscriberEmail = process.env.SUBSCRIBER_EMAIL;
@@ -30,7 +29,8 @@ async function get_cert() {
     console.log(ev, msg.altname || "", msg.status || "");
   }
 
-  var ACME = require("acme");
+  //var ACME = require("acme");
+  var ACME = require("./@root/acme/acme.js");
   var acme = ACME.create({ maintainerEmail, packageAgent, notify });
 
   var directoryUrl =
