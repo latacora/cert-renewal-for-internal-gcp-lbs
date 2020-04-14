@@ -7,7 +7,7 @@ const { Storage } = require("@google-cloud/storage");
 
 // Creates a client
 const storage = new Storage();
-const bucket = storage.bucket("certs-bucket-for-testing");
+const bucket = storage.bucket(process.env.GCP_BUCKET);
 
 var fs = require("fs");
 async function get_cert() {
@@ -58,7 +58,6 @@ async function get_cert() {
   await privkeyFile.save(accountPem);
 
   const privkeyData = await privkeyFile.download();
-  console.log(privkeyData[0].toString());
   let privateAccountKeyPem = privkeyData[0].toString();
   /*
   var privateAccountKeyPem = await fs.promises.readFile(
@@ -90,6 +89,16 @@ async function get_cert() {
   console.info("created account with id", account.key.kid);
   console.log("account");
   console.log(account);
+  let accountStr = JSON.stringify(account, null, 2);
+  console.log(accountStr);
+  const accountInfoFile = bucket.file("accountinfo.json");
+  await accountInfoFile.save(accountStr);
+
+  let accountInfoStr = await accountInfoFile.download();
+  var account = JSON.parse(accountInfoStr);
+  console.log("loaded account");
+  console.log(account);
+  
   // just need to save the account too so no need to "create" each time
   // accountKey and account will be used in the certificate options
   //###################################
@@ -108,7 +117,6 @@ async function get_cert() {
 
   const serverPrivkeyData = await serverPrivkeyFile.download();
   console.log("serverPem loaded from cloud storage");
-  console.log(serverPrivkeyData[0].toString());
   serverPem = serverPrivkeyData[0].toString();
 
   /////////////////////////////////////////////////
