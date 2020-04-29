@@ -11,11 +11,17 @@ const bucket = storage.bucket(process.env.GCP_BUCKET);
 
 var fs = require("fs");
 async function get_cert() {
-  const bucketResponse = await bucket.getFiles();
   const start = Date.now();
   var maintainerEmail = process.env.MAINTAINER_EMAIL;
   var subscriberEmail = process.env.SUBSCRIBER_EMAIL;
   var customerEmail = process.env.CUSTOMER_EMAIL;
+  var accountPrivateKeyPemFile = process.env.ACCOUNT_PRIV_KEY_PEM_FILE ? process.env.ACCOUNT_PRIV_KEY_PEM_FILE : "accountPrivateKey.pem";
+  var serverPrivateKeyPemFile = process.env.SERVER_PRIV_KEY_PEM_FILE ? process.env.SERVER_PRIV_KEY_PEM_FILE : "serverPrivateKey.pem";
+  var letsEncryptAccountInfoFile = process.env.LETS_ENCRYPT_ACCOUNT_INFO_FILE ? process.env.LETS_ENCRYPT_ACCOUNT_INFO_FILE : "letsEncryptAccountInfo.json";
+  var sslCertFile = process.env.SSL_CERT_FILE ? process.env.SSL_CERT_FILE : "sslCert.pem";
+  var certChainFile = process.env.CERT_CHAIN_FILE ? process.env.CERT_CHAIN_FILE : "certChain.pem";
+
+
 
   var pkg = require("./package.json");
   var packageAgent = "test-" + pkg.name + "/" + pkg.version;
@@ -40,92 +46,43 @@ async function get_cert() {
 
   await acme.init(directoryUrl);
 
-  // This is your Let's Encrypt account
   var Keypairs = require("@root/keypairs");
-  // This should probably have already been created somewhere else
-  // if accountKey has not been created yet, use this code
-  // otherwise pull the private account key from secrets or something, encrypted in storage?
-  var accountKeypair = await Keypairs.generate({ kty: "EC", format: "jwk" });
-  var accountKey = accountKeypair.private;
-
-  var accountPem = await Keypairs.export({ jwk: accountKey, format: "pkcs8" });
 
   ///////////////////////////
   // Use the storage of choice, we're using google storage here
-  const privkeyFile = bucket.file("accountprivkey.pem");
-  await fs.promises.writeFile("/tmp/accountprivkey.pem", accountPem, "ascii");
-  console.log("writing accountprivkey.pem");
-  await privkeyFile.save(accountPem);
+  const gcpAccountPrivateKeyPemFile = bucket.file(accountPrivateKeyPemFile);
 
-  const privkeyData = await privkeyFile.download();
-  let privateAccountKeyPem = privkeyData[0].toString();
-  /*
-  var privateAccountKeyPem = await fs.promises.readFile(
-    "/tmp/accountprivkey.pem",
-    "ascii"
-  );
-  */
+  let accountPrivateKeyPemFileResponse = await gcpAccountPrivateKeyPemFile.download();
+  let accountPrivateKeyPem = accountPrivateKeyPemFileResponse[0].toString();
+  //
   /////////////////////////////////////////////////
 
-  var accountKey = await Keypairs.import({ pem: privateAccountKeyPem });
+  var accountKey = await Keypairs.import({ pem: accountPrivateKeyPem });
 
-  var agreeToTerms = true;
-  // If you are multi-tenanted or white-labled and need to present the terms of
-  // use to the Subscriber running the service, you can do so with a function.
+  //Pulling down your Let's Encrypt account data that's json
 
-  var agreeToTerms = async function () {
-    return true;
-  };
+  const accountInfoFile = bucket.file(letsEncryptAccountInfoFile);
 
-  //###################################
-  //Create Let's Encrypt Account or just pull up your account data that's json
-
-  console.info("registering new ACME account...");
-  var account = await acme.accounts.create({
-    subscriberEmail,
-    agreeToTerms,
-    accountKey,
-  });
-  console.info("created account with id", account.key.kid);
-  console.log("account");
-  console.log(account);
-  let accountStr = JSON.stringify(account, null, 2);
-  console.log(accountStr);
-  const accountInfoFile = bucket.file("accountinfo.json");
-  await accountInfoFile.save(accountStr);
-
-  let accountInfoStr = await accountInfoFile.download();
-  var account = JSON.parse(accountInfoStr);
+  let letsEncryptAccountInfoResponse = await accountInfoFile.download();
+  var account = JSON.parse(letsEncryptAccountInfoResponse[0].toString());
   console.log("loaded account");
-  console.log(account);
   
-  // just need to save the account too so no need to "create" each time
   // accountKey and account will be used in the certificate options
   //###################################
 
-  // You can generate new serverkey, but you probably have already done this once
-  var serverKeypair = await Keypairs.generate({ kty: "RSA", format: "jwk" });
-
-  var serverKey = serverKeypair.private;
-  let serverPem = await Keypairs.export({ jwk: serverKey });
-
+  // Get server private key
   ///////////////////////////
   // Use the storage of choice, we're using google storage here
-  const serverPrivkeyFile = bucket.file("privkey.pem");
-  console.log("writing privkey.pem to cloudstorage");
-  await serverPrivkeyFile.save(serverPem);
+  const gcpServerPrivateKeyPemFile = bucket.file(serverPrivateKeyPemFile);
 
-  const serverPrivkeyData = await serverPrivkeyFile.download();
-  console.log("serverPem loaded from cloud storage");
-  serverPem = serverPrivkeyData[0].toString();
+  const gcpServerPrivateKeyDataResponse = await gcpServerPrivateKeyPemFile.download();
+  const serverPrivateKeyPem = gcpServerPrivateKeyDataResponse[0].toString();
 
-  /////////////////////////////////////////////////
-  var serverKey = await Keypairs.import({ pem: serverPem });
-
-
+  const serverKey = await Keypairs.import({ pem: serverPrivateKeyPem });
+  ////////////////////////////////////////
   var punycode = require("punycode");
-  //var domains = [process.env.DOMAIN_NAME];
-  var domains = JSON.parse(process.env.DOMAIN_NAME);
+  // since it's a google function, you could also pass in a payload that would be the domains list
+  var domains = JSON.parse(process.env.DOMAIN_NAMES);
   domains = domains.map(function (name) {
     return punycode.toASCII(name);
   });
@@ -140,9 +97,12 @@ async function get_cert() {
   var csr = PEM.packBlock({ type: typ, bytes: csrDer });
 
   console.log("csr created");
-  await fs.promises.writeFile("/tmp/csr.crt", csr, "ascii");
+  //await fs.promises.writeFile("/tmp/csr.crt", csr, "ascii");
+  
+  // This is account info regarding where the Google DNS service lives
   const projectId = process.env.PROJECT_ID;
   const zonename = process.env.ZONENAME;
+  // propagationDelay could probably be changed
   const challenges = {
     "dns-01": {
       ...googleDns.create({ projectId, zonename }),
@@ -154,25 +114,21 @@ async function get_cert() {
   var certificateOptions = { account, accountKey, csr, domains, challenges };
   var pems = await acme.certificates.create(certificateOptions);
 
-  // might need to clean up record sets for the domains with a predetermined prefix
-  // requires awareness of googledns which makes this non-portable
-  // ideally this would be handled in the acme.certificates, but it's difficult to modify that
-
   // Get SSL Certificate
   var fullchain = pems.cert + "\n" + pems.chain + "\n";
 
   ///////////////////////////
   // Use the storage of choice, we're using google storage here
-  const pubkeyCertFile = bucket.file("pubkeycert.pem");
-  console.log("writing pubkeycert.pem to cloudstorage");
-  await pubkeyCertFile.save(pems.cert);
+  const gcpSslCertFile = bucket.file(sslCertFile);
+  console.log(`writing ${sslCertFile} to cloudstorage`);
+  await gcpSslCertFile.save(pems.cert);
 
   /////////////////////////////////////////////////
 
   ///////////////////////////
   // Use the storage of choice, we're using google storage here
-  const fullchainFile = bucket.file("fullchain.pem");
-  console.log("writing fullchain.pem to cloudstorage");
+  const fullchainFile = bucket.file(certChainFile);
+  console.log(`writing ${certChainFile} to cloudstorage`);
   await fullchainFile.save(fullchain);
 
   /////////////////////////////////////////////////
@@ -196,9 +152,12 @@ function millisToMinutesAndSeconds(millis) {
 
 module.exports.handler = get_cert;
 
-if (process.env.CERT_ENV === "development") {
-  console.log("calling get_cert");
-  get_cert().then(function (success) {
-    console.log(success);
-  });
+if (require.main === module) {
+    get_cert()
+        .then((message) => {
+            console.log(message);
+        })
+        .catch((err) => {
+            console.log(err);
+        });
 }

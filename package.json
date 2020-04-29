@@ -15,6 +15,8 @@
     "@root/keypairs": "^0.9.0",
     "@root/pem": "^1.0.4",
     "acme": "^3.0.3",
-    "acme-dns-01-gcp": "0.0.6"
+    "acme-dns-01-gcp": "0.0.7",
+    "dotenv": "^8.2.0",
+    "googleapis": "^48.0.0"
   }
 }
