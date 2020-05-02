@@ -179,10 +179,6 @@ resource "google_compute_region_instance_group_manager" "appserver" {
   }
 
   target_size  = 2
-  named_port {
-    name = "default"
-    port = 80
-  }
 
   auto_healing_policies {
     health_check      = google_compute_health_check.autohealing.self_link

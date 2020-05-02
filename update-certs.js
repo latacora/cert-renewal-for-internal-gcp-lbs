@@ -272,7 +272,7 @@ async function updateLoadBalancerCerts() {
 exports.handler = updateLoadBalancerCerts;
 
 if (require.main === module) {
-	doAll().then((res) => {
+	updateLoadBalancerCerts().then((res) => {
 		console.log(res);
 	})
 	.catch((err) => {
