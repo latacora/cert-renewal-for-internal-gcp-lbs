@@ -243,7 +243,7 @@ async function updateLoadBalancerCerts() {
 	console.log(forwardingRulesResponse.data.items[0]);
 	*/
 
-	/* Opted to go for a different strategy since I kept getting the following error: wrong collection: expected [compute.targetHttpsProxies], got [compute.regionTargetHttpsProxies]       
+	/* Opted to go for a different strategy since I kept getting the following error: wrong collection: expected [compute.targetHttpsProxies], got [compute.regionTargetHttpsProxies]. or 400 `Invalid target type TARGET_HTTPS_PROXY for forwarding rule in scope REGION` when trying to setTarget for forwarding rule. I guess it thinks that either the httpsProxy or the forwardingRule is global, but I'm using the regional methods. But works (200 response) when you setTarget to the targetHttpsProxy that is already set. Also, the setSslCertificates function is only available on global targetHttpsProxies
         const forwardingRulesPatchResponse = await compute.forwardingRules.setTarget({
                 auth: authClient,
                 project: projectId,
