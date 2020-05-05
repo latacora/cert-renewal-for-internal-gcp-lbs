@@ -31,15 +31,15 @@ Use `node create-new.js` will create a account key  (EC) and a server key (RSA).
 Environment variables [Some of these values are better described here](https://git.coolaj86.com/coolaj86/acme.js#user-content-api-overview)
 
 `create-new.js`  
-MAINTAINER_EMAIL - author of the code
-SUBSCRIBER_EMAIL - concat of the service provider to revieve renewal failure notices and manage the ACME account.
-CUSTOMER_EMAIL - Not used
-CERT_ENV= - set to "production" to use the production Let's Encrypt domain url, else the staging domain url will be used
-GCP_BUCKET - bucket that you created using terraform in the previous step
-PACKAGE_AGENT_PREFIX - Optional should be an RFC72321-style user-agent string to append to the ACME client (ex: mypackage/v1.1.1)
-ACCOUNT_PRIV_KEY_PEM_FILE - Optional - accountPrivateKey.pem 
-SERVER_PRIV_KEY_PEM_FILE - Optional - serverPrivateKey.pem
-LETS_ENCRYPT_ACCOUNT_INFO_FILE - Optional letsEncryptAccountInfo.json
+MAINTAINER_EMAIL - author of the code  
+SUBSCRIBER_EMAIL - concat of the service provider to revieve renewal failure notices and manage the ACME account.  
+CUSTOMER_EMAIL - Not used  
+CERT_ENV= - set to "production" to use the production Let's Encrypt domain url, else the staging domain url will be used  
+GCP_BUCKET - bucket that you created using terraform in the previous step  
+PACKAGE_AGENT_PREFIX - Optional should be an RFC72321-style user-agent string to append to the ACME client (ex: mypackage/v1.1.1)  
+ACCOUNT_PRIV_KEY_PEM_FILE - Optional - accountPrivateKey.pem  
+SERVER_PRIV_KEY_PEM_FILE - Optional - serverPrivateKey.pem  
+LETS_ENCRYPT_ACCOUNT_INFO_FILE - Optional letsEncryptAccountInfo.json  
 
 ----------------------------------------------------------------------------
 `index.js`  
