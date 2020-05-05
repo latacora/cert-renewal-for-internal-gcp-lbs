@@ -1,8 +1,10 @@
-variable "project_name" {
+variable "project_id" {
 	type = string
 }
 variable "creds_file_path" {
 	type = string
+	default = ""
+	description = "path to service account creds. You probably don't want to use this"
 }
 variable "region" {
 	type = string

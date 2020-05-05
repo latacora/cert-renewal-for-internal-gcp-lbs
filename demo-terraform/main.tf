@@ -3,7 +3,7 @@ terraform {
 }
 
 provider "google" {
-	project = "gcp-study-renzo"
+	project = var.project_id
 	#credentials = file(var.creds_file_path)
 	region = var.region
         zone = var.zone
@@ -16,7 +16,7 @@ resource "google_compute_network" "vpc_network" {
 
 resource "google_compute_subnetwork" "generic" {
   provider = google-beta
-  project = var.project_name
+  project = var.project_id
   name          = "generic-subnet"
   ip_cidr_range = "10.1.2.0/24" # this is hard-coded
   region        = var.region
@@ -28,7 +28,7 @@ resource "google_compute_subnetwork" "generic" {
 # TBH, I don't really see where its actually used in this config unless its just some GCP magic that happens behind the scenes.
 resource "google_compute_subnetwork" "proxy-lb" {
   provider = google-beta
-  project = var.project_name
+  project = var.project_id
   name          = "load-balancer-proxy"
   ip_cidr_range = "10.129.0.0/23" # this is hard-coded
   region        = var.region
@@ -116,7 +116,7 @@ resource "google_compute_forwarding_rule" "https" {
 
 resource "google_compute_region_target_https_proxy" "default" {
   provider = google-beta
-  project = var.project_name
+  project = var.project_id
   name             = "https-proxy"
   region = var.region
   url_map          = google_compute_region_url_map.default.self_link
@@ -136,14 +136,14 @@ resource "google_compute_region_url_map" "default" {
   provider = google-beta
 
   region          = var.region
-  project         = var.project_name
+  project         = var.project_id
   name            = "internal-backend-map"
   default_service = google_compute_region_backend_service.backend.self_link
 }
 
 resource "google_compute_region_backend_service" "backend" {
   provider = google-beta
-  project = var.project_name
+  project = var.project_id
   name = "default"
   region                = var.region
   health_checks         = [google_compute_region_health_check.hc.self_link]

@@ -3,12 +3,12 @@ const googleDns = require("acme-dns-01-gcp");
 require("dotenv").config();
 
 var fs = require("fs");
-async function get_cert() {
+async function get_cert(event, context) {
   const start = Date.now();
   // Let's encrypt contact config
   const maintainerEmail = process.env.MAINTAINER_EMAIL;
   const subscriberEmail = process.env.SUBSCRIBER_EMAIL;
-  const customerEmail = process.env.CUSTOMER_EMAIL;
+  const customerEmail = process.env.CUSTOMER_EMAIL ? process.env.CUSTOMER_EMAIL : "";
   // Existing files  // All these files are assumed to already have been created
   const accountPrivateKeyPemFile = process.env.ACCOUNT_PRIV_KEY_PEM_FILE ? process.env.ACCOUNT_PRIV_KEY_PEM_FILE : "accountPrivateKey.pem";
   const serverPrivateKeyPemFile = process.env.SERVER_PRIV_KEY_PEM_FILE ? process.env.SERVER_PRIV_KEY_PEM_FILE : "serverPrivateKey.pem";
@@ -113,23 +113,25 @@ async function get_cert() {
   const pems = await acme.certificates.create(certificateOptions);
 
   // Get SSL Certificate
-  // I'm pretty certain you need to combine the chain with the public cert for the full chain
-  // But if you want each of them separately then this is where you'd modify that
+  // If you want each of them separately then this is where you'd modify that
   const fullchain = pems.cert + "\n" + pems.chain;
 
   ///////////////////////////
-  if (true) { // Control how to upload or write files
-	// Use the storage of choice, we're using google storage here  
-  	const uploadBucket = storage.bucket(process.env.GCP_BUCKET);
-	const gcpSslCertFile = uploadBucket.file(sslCertFile);
-  	console.log(`writing ${sslCertFile} to cloudstorage`);
-  	await gcpSslCertFile.save(pems.cert);
+   // Control how to upload or write files
+   // Use the storage of choice, we're using google storage here  
+  const uploadBucket = storage.bucket(process.env.GCP_BUCKET);
+  const gcpSslCertFile = uploadBucket.file(sslCertFile);
+  console.log(`writing ${sslCertFile} to cloudstorage`);
+  await gcpSslCertFile.save(pems.cert);
 
-	const fullchainFile = uploadBucket.file(certChainFile);
-        console.log(`writing ${certChainFile} to cloudstorage`);
-        await fullchainFile.save(fullchain);
-
+  const fullchainFile = uploadBucket.file(certChainFile);
+  console.log(`writing ${certChainFile} to cloudstorage`);
+  await fullchainFile.save(fullchain);
+	
 	// write to local fs
+	// Don't do this if you're on Google Functions. I suppose you could write to /tmp
+	// but, why?
+  if (process.env.LOCAL_MACHINE) {	
   	console.log(`writing ssl public cert to ${sslCertFile}`);
   	await fs.promises.writeFile(`./${sslCertFile}`, pems.cert, "ascii");
 
