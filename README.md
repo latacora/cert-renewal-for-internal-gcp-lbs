@@ -1,32 +1,99 @@
-Automatically renewing and rotating certificates on Google Internal Load-balances with Let's Encrypt
+## Automatically renewing and rotating certificates on Google Internal Load-balances with Let's Encrypt
 Problem: Google does not offer managed certificates for its internal load-balancers
 
-This PoC demonstrates how to renew and rotate certificates using two scripts.
-There are two separate things happening in this demo.
-Renewal of the certs
-Rotation of the certs on target devices
-This repository primarily exists to demonstrate that it is possible to automate certificate rotation on Google internal load-balancers with minimal infratructure setup and without requiring your own CA. The code is this repository should not be put into your production environemnts without appropriate review.
+Certificate management consists of two primary responsibilities: Renewal and Rotation
+This PoC is divided into two parts to reflect these responsibilities: 
+
+1. Renewal - Using [ACME.js](https://git.coolaj86.com/coolaj86/acme.js) with the [acme-dns-01-gcp](https://github.com/latacora/acme-dns-01-gcp) plugin to create and renew certificates. This relies on Google Cloud DNS, Google Storage. 
+2. Rotation - Rotate certificates on the Google load-balancers using the available Google Compute API.
+-----------------
+
+### Certificate Renewal
+
+----------------------------------------------------------------------------
+`index.js`  
+
+`index.js` is going to look for files in a GCP_BUCKET. This happens by default because the expectation is you will not be running index.js from a local machine normally. The `Deployment` section at the bottom outlines a strategy to deploy in Google Functions.
+
+Required 
+
+environment variables:
+MAINTAINER_EMAIL - author of the code  
+SUBSCRIBER_EMAIL - concat of the service provider to revieve renewal failure notices and manage the ACME account.  
+CUSTOMER_EMAIL - Not used  
+PROJECT_ID - GCP project id  
+ZONENAME - GCP DNS Zonename  
+GCP_BUCKET - GCP Storage bucket name  
+DOMAIN_NAMES '["placeholder.example.com", "backend.placeholder.example.com", "frontend.placeholder.example.com", "\*.backend.placeholder.example.com"]'  
+CERT_ENV= - set to "production" to use the production Let's Encrypt domain url, else the staging domain url will be used  
+
+PACKAGE_AGENT_PREFIX - Optional should be an RFC72321-style user-agent string to append to the ACME client (ex: mypackage/v1.1.1)  
+
+ACCOUNT_PRIV_KEY_PEM_FILE - Default - accountPrivateKey.pem  
+SERVER_PRIV_KEY_PEM_FILE - Default - serverPrivateKey.pem  
+LETS_ENCRYPT_ACCOUNT_INFO_FILE - Default letsEncryptAccountInfo.json  
+SSL_CERT_FILE - Default sslCert.pem  
+CERT_CHAIN_FILE - Default certChain.pem  
+LOCAL_MACHINE - set to 1 to have the certificate chain and signed certificate written to the local filesystem.  
 
 
-This PoC is divided into two parts:
+The purpose of the `index.js` is to create a certificate signing request and get a signed certificate from Let's Encrypt using Google Cloud DNS.  
+
+Note:
+This specific method that you choose for renewing certificates does not create dependencies for rotation since they happen independently, however, renewing certificates usually implies that you are also interested in rotating certificates. I don't think I need to go into further detail here since you probably already know this is you're reading this. If you wish to choose another method for certificate renewal, you can review the [clients](https://letsencrypt.org/docs/client-options/) available on the Let's Encrypt website or write something yourself.
 You need to create a bucket to hold your certs.
 You can really use anything you want to hold certs or whatnot
 You need a Cloud DNS zone for dns domain validation
 
-This specific method that you choose for renewing certificates does not create dependencies for rotation since they happen independently, however, renewing certificates usually implies that you are also interested in rotating certificates. I don't think I need to go into further detail here since you probably already know this is you're reading this. If you wish to choose another method for certificate renewal, you can review the [clients](https://letsencrypt.org/docs/client-options/) available on the Let's Encrypt website or write something yourself. 
+If you don't have an existing Let's Encrypt account, included in this repo is `create-new.js` which can help you with account key (EC) and a server key (RSA). The account key is used to create a Let's Encrypt account and the account metadata is returned as JSON.
 
-1. Using [ACME.js](https://git.coolaj86.com/coolaj86/acme.js) with the [acme-dns-01-gcp](https://github.com/latacora/acme-dns-01-gcp) plugin to create and renew certificates. This relies on Google Cloud DNS, Google Storage, and Google Functions. 
-2. Rotate certificates on the Google load-balancers using the available Google Compute API.
+`create-new.js`  
+MAINTAINER_EMAIL - author of the code  
+SUBSCRIBER_EMAIL - concat of the service provider to revieve renewal failure notices and manage the ACME account.  
+CUSTOMER_EMAIL - Not used  
+CERT_ENV= - set to "production" to use the production Let's Encrypt domain url, else the staging domain url will be used  
+GCP_BUCKET - bucket that you created using terraform in the previous step  
+PACKAGE_AGENT_PREFIX - Optional should be an RFC72321-style user-agent string to append to the ACME client (ex: mypackage/v1.1.1)  
+ACCOUNT_PRIV_KEY_PEM_FILE - Optional - accountPrivateKey.pem  
+SERVER_PRIV_KEY_PEM_FILE - Optional - serverPrivateKey.pem  
+LETS_ENCRYPT_ACCOUNT_INFO_FILE - Optional letsEncryptAccountInfo.json  
+
+Resources:
+ACCOUNT_PRIV_KEY_PEM_FILE  
+SERVER_PRIV_KEY_PEM_FILE  
+LETS_ENCRYPT_ACCOUNT_INFO_FILE  
+
+---------------------------
+Deploy the infrasructure in `demo-terraform/` if you do not already have existing infrastructure
+
+### Certificate Rotation
+
+`update-certs.py`  
+PROJECT_ID  
+REGION  
+NETWORK - network name (could make this the url) 
+SUBNETWORK - subnetwork name (could make this url as well)  
+DNS_PRIVATE_ZONENAME  
+BACKEND_DNS_NAME - DNS name of backend load-balancer  
+CERT_CHAIN_FILE  
+
 
 [API](https://cloud.google.com/compute/docs/reference/rest/v1/forwardingRules/setTarget) for forwardingRules seems to indicate that a setTarget method exists, I kept getting the following error: 400 `Invalid target type TARGET_HTTPS_PROXY for forwarding rule in scope REGION` when trying to setTarget for forwarding rule. I guess it thinks that either the httpsProxy or the forwardingRule is global, but I'm using the regional methods. But works (200 response) when you setTarget to the targetHttpsProxy that is already set. 
 Also, the setSslCertificates function is only available on global targetHttpsProxies
 
 
+
 Parts: Google Storage for account key, server key, let's encrypt account info, signed cert and cert chain. A single bucket was used, however, you are free to use more.
 
+This PoC demonstrates how to renew and rotate certificates using two scripts.
+There are two separate things happening in this demo.
+Renewal of the certs
+Rotation of the certs on target devices
+
+This repository primarily exists to demonstrate that it is possible to automate certificate rotation on Google internal load-balancers with minimal infratructure setup and without requiring your own CA. The code is this repository should not be put into your production environemnts without appropriate review.
 
 
-Walkthrough:
+Complete demo walkthrough:
 Assuming you have nothing
 `init-terraform/` will create a Google Storage bucket and a Google Cloud DNS - The `variables.tf` file there will describe the required variables.
 
@@ -95,6 +162,9 @@ CERT_CHAIN_FILE
 Deployment Strategies:
 
 Use a lambda to make updates to your frontend listeners for the load balancers. Probably in the form of just adding additional certs and expiring the old ones
+Takes about 5 minutes in the demo on my machine. Need to try it in a lambda. Most of the time spent should be DNS validation time.  
+AWS Lambda has a limit of 15 minutes
+Google Functions has a limit of 9 minutes
 
 You could pass in env vars or pass in a payload to the google function that would be parsed  
 This example is using ENV VARs  
