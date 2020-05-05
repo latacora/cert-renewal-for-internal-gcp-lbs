@@ -8,6 +8,11 @@ Rotation of the certs on target devices
 This repository primarily exists to demonstrate that it is possible to automate certificate rotation on Google internal load-balancers with minimal infratructure setup and without requiring your own CA. The code is this repository should not be put into your production environemnts without appropriate review.
 
 
+This PoC is divided into two parts:
+You need to create a bucket to hold your certs.
+You can really use anything you want to hold certs or whatnot
+You need a Cloud DNS zone for dns domain validation
+
 This specific method that you choose for renewing certificates does not create dependencies for rotation since they happen independently, however, renewing certificates usually implies that you are also interested in rotating certificates. I don't think I need to go into further detail here since you probably already know this is you're reading this. If you wish to choose another method for certificate renewal, you can review the [clients](https://letsencrypt.org/docs/client-options/) available on the Let's Encrypt website or write something yourself. 
 
 1. Using [ACME.js](https://git.coolaj86.com/coolaj86/acme.js) with the [acme-dns-01-gcp](https://github.com/latacora/acme-dns-01-gcp) plugin to create and renew certificates. This relies on Google Cloud DNS, Google Storage, and Google Functions. 
@@ -23,10 +28,14 @@ Parts: Google Storage for account key, server key, let's encrypt account info, s
 
 Walkthrough:
 Assuming you have nothing
-init-terraform will create a Google Storage bucket and a Google Cloud DNS - The variables.tf file there will describe the required variables.
-Use `node create-new.js` will create a account key  (EC) and a server key (RSA). The account key is used to create a Let's Encrypt account and the account metadata is returned as JSON. These three values are then uploaded to the Google Storage bucket if the environment variable "GCP_BUCKET" is set else they are only to your local filesystem.
+`init-terraform/` will create a Google Storage bucket and a Google Cloud DNS - The `variables.tf` file there will describe the required variables.
+
+Resources:
+Google Storage bucket
+Google Cloud DNS
 
 
+Use `node create-new.js` will create a account key (EC) and a server key (RSA). The account key is used to create a Let's Encrypt account and the account metadata is returned as JSON. These three values are then uploaded to the Google Storage bucket if the environment variable "GCP_BUCKET" is set else they are only to your local filesystem.
 
 Environment variables [Some of these values are better described here](https://git.coolaj86.com/coolaj86/acme.js#user-content-api-overview)
 
@@ -40,6 +49,15 @@ PACKAGE_AGENT_PREFIX - Optional should be an RFC72321-style user-agent string to
 ACCOUNT_PRIV_KEY_PEM_FILE - Optional - accountPrivateKey.pem  
 SERVER_PRIV_KEY_PEM_FILE - Optional - serverPrivateKey.pem  
 LETS_ENCRYPT_ACCOUNT_INFO_FILE - Optional letsEncryptAccountInfo.json  
+
+Resources:
+ACCOUNT_PRIV_KEY_PEM_FILE  
+SERVER_PRIV_KEY_PEM_FILE  
+LETS_ENCRYPT_ACCOUNT_INFO_FILE  
+
+---------------------------
+Deploy the infrasructure in `demo-terraform/` if you do not already have existing infrastructure
+
 
 ----------------------------------------------------------------------------
 `index.js`  
@@ -61,6 +79,8 @@ CERT_CHAIN_FILE - Default certChain.pem
 LOCAL_MACHINE - set to 1 to have the certificate chain and signed certificate written to the local filesystem.  
 
 
+These three values are then uploaded to the Google Storage bucket and also written to your local filesystem if you get the environment variable LOCAL_MACHINE to 1.  
+
 `update-certs.py`  
 NETWORK  
 SUBNETWORK  
@@ -70,34 +90,11 @@ PROJECT_ID
 REGION  
 CERT_CHAIN_FILE  
 
-These three values are then uploaded to the Google Storage bucket and also written to your local filesystem if you get the environment variable LOCAL_MACHINE to 1.  
-
-
-
-This PoC is divided into two parts:
-You need to create a bucket to hold your certs.
-You can really use anything you want to hold certs or whatnot
-You need a Cloud DNS zone for dns domain validation
-
-
-
-Use a lambda to make updates to your frontend listeners for the load balancers. Probably in the form of just adding additional certs and expiring the old ones
-
-variable "fqdn" {
-        type = string
-        description = "fully qualified domain name of the dns zone that you will be creating"
-}
-variable "local-private-key-file" {
-        type = string
-        description = "would be used for initialization purposes. local file path of the server private key"
-}
-variable "local-cert-chain-file" {
-        type = string
-        description = "would be used for initialization purposes. local file path to the cert chain"
-}
 
 
 Deployment Strategies:
+
+Use a lambda to make updates to your frontend listeners for the load balancers. Probably in the form of just adding additional certs and expiring the old ones
 
 You could pass in env vars or pass in a payload to the google function that would be parsed  
 This example is using ENV VARs  
