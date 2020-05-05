@@ -8,12 +8,12 @@ Rotation of the certs on target devices
 This repository primarily exists to demonstrate that it is possible to automate certificate rotation on Google internal load-balancers with minimal infratructure setup and without requiring your own CA. The code is this repository should not be put into your production environemnts without appropriate review.
 
 
-This specific method that you choose for renewing certificates does not create dependencies for rotation since they happen independently, however, renewing certificates usually implies that you are also interested in rotating certificates. I don't think I need to go into further detail here since you probably already know this is you're reading this. If you wish to choose another method for certificate renewal, you can review the (clients)[https://letsencrypt.org/docs/client-options/] available on the Let's Encrypt website or write something yourself. 
+This specific method that you choose for renewing certificates does not create dependencies for rotation since they happen independently, however, renewing certificates usually implies that you are also interested in rotating certificates. I don't think I need to go into further detail here since you probably already know this is you're reading this. If you wish to choose another method for certificate renewal, you can review the [clients](https://letsencrypt.org/docs/client-options/) available on the Let's Encrypt website or write something yourself. 
 
-1. Using (ACME.js)[https://git.coolaj86.com/coolaj86/acme.js] with the (acme-dns-01-gcp)[https://github.com/latacora/acme-dns-01-gcp] plugin to create and renew certificates. This relies on Google Cloud DNS, Google Storage, and Google Functions. 
+1. Using [ACME.js](https://git.coolaj86.com/coolaj86/acme.js) with the [acme-dns-01-gcp](https://github.com/latacora/acme-dns-01-gcp) plugin to create and renew certificates. This relies on Google Cloud DNS, Google Storage, and Google Functions. 
 2. Rotate certificates on the Google load-balancers using the available Google Compute API.
 
-(API)[https://cloud.google.com/compute/docs/reference/rest/v1/forwardingRules/setTarget] for forwardingRules seems to indicate that a setTarget method exists, I kept getting the following error: 400 `Invalid target type TARGET_HTTPS_PROXY for forwarding rule in scope REGION` when trying to setTarget for forwarding rule. I guess it thinks that either the httpsProxy or the forwardingRule is global, but I'm using the regional methods. But works (200 response) when you setTarget to the targetHttpsProxy that is already set. 
+[API](https://cloud.google.com/compute/docs/reference/rest/v1/forwardingRules/setTarget) for forwardingRules seems to indicate that a setTarget method exists, I kept getting the following error: 400 `Invalid target type TARGET_HTTPS_PROXY for forwarding rule in scope REGION` when trying to setTarget for forwarding rule. I guess it thinks that either the httpsProxy or the forwardingRule is global, but I'm using the regional methods. But works (200 response) when you setTarget to the targetHttpsProxy that is already set. 
 Also, the setSslCertificates function is only available on global targetHttpsProxies
 
 
@@ -30,7 +30,7 @@ Use `node create-new.js` will create a account key  (EC) and a server key (RSA).
 
 Environment variables [Some of these values are better described here](https://git.coolaj86.com/coolaj86/acme.js#user-content-api-overview)
 
-`create-new.js`
+`create-new.js`  
 MAINTAINER_EMAIL - author of the code
 SUBSCRIBER_EMAIL - concat of the service provider to revieve renewal failure notices and manage the ACME account.
 CUSTOMER_EMAIL - Not used
@@ -42,35 +42,35 @@ SERVER_PRIV_KEY_PEM_FILE - Optional - serverPrivateKey.pem
 LETS_ENCRYPT_ACCOUNT_INFO_FILE - Optional letsEncryptAccountInfo.json
 
 ----------------------------------------------------------------------------
-`index.js`
-PROJECT_ID
-ZONENAME
-GCP_BUCKET
-DOMAIN_NAMES '["placeholder.example.com", "backend.placeholder.example.com", "frontend.placeholder.example.com", "\*.backend.placeholder.example.com"]'
-CERT_ENV
-MAINTAINER_EMAIL
-SUBSCRIBER_EMAIL
-CUSTOMER_EMAIL
-PACKAGE_AGENT_PREFIX
+`index.js`  
+PROJECT_ID  
+ZONENAME  
+GCP_BUCKET  
+DOMAIN_NAMES '["placeholder.example.com", "backend.placeholder.example.com", "frontend.placeholder.example.com", "\*.backend.placeholder.example.com"]'  
+CERT_ENV  
+MAINTAINER_EMAIL  
+SUBSCRIBER_EMAIL  
+CUSTOMER_EMAIL  
+PACKAGE_AGENT_PREFIX  
 
-ACCOUNT_PRIV_KEY_PEM_FILE - Default - accountPrivateKey.pem
-SERVER_PRIV_KEY_PEM_FILE - Default - serverPrivateKey.pem
-LETS_ENCRYPT_ACCOUNT_INFO_FILE - Default letsEncryptAccountInfo.json
-SSL_CERT_FILE - Default sslCert.pem
-CERT_CHAIN_FILE - Default certChain.pem
-LOCAL_MACHINE - set to 1 to have the certificate chain and signed certificate written to the local filesystem.
+ACCOUNT_PRIV_KEY_PEM_FILE - Default - accountPrivateKey.pem  
+SERVER_PRIV_KEY_PEM_FILE - Default - serverPrivateKey.pem  
+LETS_ENCRYPT_ACCOUNT_INFO_FILE - Default letsEncryptAccountInfo.json  
+SSL_CERT_FILE - Default sslCert.pem  
+CERT_CHAIN_FILE - Default certChain.pem  
+LOCAL_MACHINE - set to 1 to have the certificate chain and signed certificate written to the local filesystem.  
 
 
-`update-certs.py`
-NETWORK
-SUBNETWORK
-DNS_PRIVATE_ZONENAME
-BACKEND_DNS_NAME
-PROJECT_ID
-REGION
-CERT_CHAIN_FILE
+`update-certs.py`  
+NETWORK  
+SUBNETWORK  
+DNS_PRIVATE_ZONENAME  
+BACKEND_DNS_NAME  
+PROJECT_ID  
+REGION  
+CERT_CHAIN_FILE  
 
-These three values are then uploaded to the Google Storage bucket and also written to your local filesystem if you get the environment variable LOCAL_MACHINE to 1.
+These three values are then uploaded to the Google Storage bucket and also written to your local filesystem if you get the environment variable LOCAL_MACHINE to 1.  
 
 
 
@@ -97,29 +97,7 @@ variable "local-cert-chain-file" {
 }
 
 
-
-contains terraform  
-
-to create a google storage bucket  
-create a load balancer and uses the certs created in the script  
-
+Deployment Strategies:
 
 You could pass in env vars or pass in a payload to the google function that would be parsed  
 This example is using ENV VARs  
-
-env vars  
-MAINTAINER_EMAIL  
-SUBSCRIBER_EMAIL  
-CUSTOMER_EMAIL  
-CERT_ENV=development/production  
-DOMAIN_NAME='["example.com"]'  
-GCP_BUCKEt  
-'["service.example.com", "\*.service.example.com"]'  
-'["\*.example.com"]', '["service.example.com", "hello.example.com"]' '["example.com"]'  
-PROJECT_ID # GCP prooject id where you manage DNS  
-ZONENAME # GCP zone name with relevant records related to the domain  
-SSL_CERT_FILE
-CERT_CHAIN_FILE
-ACCOUNT_PRIV_KEY_PEM_FILE
-SERVER_PRIV_KEY_PEM_FILE
-LETS_ENCRYPT_ACCOUNT_INFO_FILE
