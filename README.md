@@ -1,5 +1,5 @@
 ## Automatically renewing and rotating certificates on Google Internal Load-balances with Let's Encrypt
-#####Problem:
+##### Problem:
 Google does not offer managed certificates for its internal load-balancers
 
 This repository exists primarily to demonstrate that it is possible to automate certificate rotation on Google internal load-balancers with minimal infratructure setup and without requiring your own CA. The code is this repository was originally intended for demostration purposes only and should not be put into your production environemnts without appropriate review.
@@ -15,7 +15,6 @@ Variables the are all UPPERCASE and snake_case are likely environment variables.
 
 * Renewal - Uses [ACME.js](https://git.coolaj86.com/coolaj86/acme.js) with the [acme-dns-01-gcp](https://github.com/latacora/acme-dns-01-gcp) plugin to create and renew certificates. This relies on Google Cloud DNS and Google Storage. 
 
-----------------------------------------------------------------------------
 The purpose of the `index.js` is to create a certificate signing request and get a signed certificate from Let's Encrypt using Google Cloud DNS.   Based on this [walkthrough](https://git.rootprojects.org/root/acme.js/src/branch/master/examples/README.md)
 
 `index.js` looks for files in a GCP_BUCKET. Specfically the files defined by ACCOUNT_PRIV_KEY_PEM_FILE, SERVER_PRIV_KEY_PEM_FILE, LETS_ENCRYPT_ACCOUNT_INFO_FILE, with the defaults of 'accountPrivateKey.pem', 'serverPrivateKey.pem', and  'letsEncryptAccountInfo.json', respectively if the environment variables are not set.
@@ -29,7 +28,6 @@ There is a slight dependency between that domain names that you request on your 
 *Note:*  
 You can pick any method that you wish for renewing certificates. This demo is using [ACME.js](https://git.coolaj86.com/coolaj86/acme.js) with the [acme-dns-01-gcp](https://github.com/latacora/acme-dns-01-gcp) plugin so that everything can be deployed and managed within GCP. Even though renewal and rotation are independent, renewing certificates usually implies that you are also interested in rotating certificates. I don't think I need to go into further detail here since you probably already know this if you're reading this demo. If you wish to choose another method for certificate renewal, you can review the [clients](https://letsencrypt.org/docs/client-options/) available on the Let's Encrypt website or write something yourself.
 
----------------------------
 
 ### Certificate Rotation `update-certs.js`
 
@@ -55,7 +53,7 @@ This demo also includes `demo-terraform/` if you wish to deploy a mock environme
 
 ### Demo walkthrough:
 
-We are going to assume you have some familiarity with Google Cloud, NodeJS, DNS, and Terraform.
+We are going to assume you have some familiarity with Google Cloud, NodeJS, DNS, and Terraform.  
 You can use a [.env](https://www.npmjs.com/package/dotenv) file to set environment variables for local use.
 
 *Prerequisites:*
@@ -64,41 +62,41 @@ You can use a [.env](https://www.npmjs.com/package/dotenv) file to set environme
 * Node10 <=
 * Terraform0.12
 
-*If starting with nothing:*
+__If starting with nothing:__  
 `cd init-terraform/` -> `terraform init` -> `terraform apply`  
 The `variables.tf` file will describe the required variables.
 
-*Resources created:*
+*Resources (infrastructure) created:*
 * Google Storage bucket (Used for holding Let's Encrypt account info, private keys, and certs)
 * Google Cloud DNS (Public, used for DNS validation)
 
-If you already have a Let's Encrypt account and your server private key, skip to 'Request new signed certificate'. 
+If you already have a Let's Encrypt account and your server private key, skip to **'Request new signed certificate'**. 
 
-If you don't have an existing Let's Encrypt account, included in this repo is `create-new.js` which can create an account key (EC) and a server key (RSA). The account key is used to create a Let's Encrypt account and the account metadata from this step is returned as JSON. Set environment variable GCP_BUCKET to have the `create-new.js` script write the generated files to your bucket (can be the bucket made in the init-terraform or another bucket), else they will only be written to your local machine. It's recommended that you set CERT_ENV to "development" so that you'll use the staging directory URL for Let's Encrypt while setting everything up. You will also get to see requests to the backend internal load-balancer fail initially due to having an "invalid" certificate. 
-
-Environment variables:[Some of these values are better described here](https://git.coolaj86.com/coolaj86/acme.js#user-content-api-overview)  
-MAINTAINER_EMAIL - author of the code  
-SUBSCRIBER_EMAIL - contact of the service provider to recieve renewal failure notices and manage the ACME account.  
-CUSTOMER_EMAIL - Not used  
-CERT_ENV - set to "production" to use the production Let's Encrypt domain url, else the staging domain url will be used  
-GCP_BUCKET - bucket that you created using terraform in the previous step  
-PACKAGE_AGENT_PREFIX - Optional should be an RFC72321-style user-agent string to append to the ACME client (ex: mypackage/v1.1.1)  
-ACCOUNT_PRIV_KEY_PEM_FILE - Optional - accountPrivateKey.pem  
-SERVER_PRIV_KEY_PEM_FILE - Optional - serverPrivateKey.pem  
-LETS_ENCRYPT_ACCOUNT_INFO_FILE - Optional letsEncryptAccountInfo.json  
+If you don't have an existing Let's Encrypt account, included in this repo is `create-new.js` which can create an account key (EC) and a server key (RSA). The account key is used to create a Let's Encrypt account and the account metadata from this step is returned as JSON. Set environment variable GCP_BUCKET to have the `create-new.js` script write the generated files to your bucket (can be the bucket made in the init-terraform or another bucket), else they will only be written to your local machine. It's recommended that you set CERT_ENV to "development" so that you'll use the staging directory URL for Let's Encrypt while setting everything up. You will also get to see requests to the backend internal load-balancer fail initially due to having an "invalid" certificate.  
 
 Resources created:
-ACCOUNT_PRIV_KEY_PEM_FILE  
-SERVER_PRIV_KEY_PEM_FILE  
-LETS_ENCRYPT_ACCOUNT_INFO_FILE  
+* account private key (EC)  
+* server private key (RSA)
+* Let's Encrypt account information (JSON)  
+
+__Environment variables: [Some of these values are better described here](https://git.coolaj86.com/coolaj86/acme.js#user-content-api-overview)__  
+* MAINTAINER_EMAIL - author of the code  
+* SUBSCRIBER_EMAIL - contact of the service provider to recieve renewal failure notices and manage the ACME account.  
+* CUSTOMER_EMAIL - Not used  
+* CERT_ENV - set to "production" to use the production Let's Encrypt domain url, else the staging domain url will be used  
+* GCP_BUCKET - bucket that you created using terraform in the previous step  
+* PACKAGE_AGENT_PREFIX - Optional should be an RFC72321-style user-agent string to append to the ACME client (ex: mypackage/v1.1.1)  
+* ACCOUNT_PRIV_KEY_PEM_FILE - Optional - accountPrivateKey.pem  
+* SERVER_PRIV_KEY_PEM_FILE - Optional - serverPrivateKey.pem  
+* LETS_ENCRYPT_ACCOUNT_INFO_FILE - Optional letsEncryptAccountInfo.json  
 
 ### Requesting new signed certificate
 
 `index.js` is the script resposible for requesting certificate renewals. It uses [ACME.js](https://git.coolaj86.com/coolaj86/acme.js) with the [acme-dns-01-gcp](https://github.com/latacora/acme-dns-01-gcp) plugin to create and renew certificates. The private keys and Let's Encrypt account information are pulled from the GCP_BUCKET and the signed certificate and certificate chain are uploaded back to the same bucket. You can adjust this if you wish. It's recommended to set LOCAL_MACHINE=1 if you're going to use the `demo-terraform/` for the mock environment so that you'll have local copies for the certificate chain for initial deployment.
 
-Environment variables [Some of these values are better described here](https://git.coolaj86.com/coolaj86/acme.js#user-content-api-overview)
+**Environment variables: [Some of these values are better described here](https://git.coolaj86.com/coolaj86/acme.js#user-content-api-overview)**
 * MAINTAINER_EMAIL - author of the code  
-* SUBSCRIBER_EMAIL - concat of the service provider to revieve renewal failure notices and manage the ACME account.  
+* SUBSCRIBER_EMAIL - contact of the service provider to recieve renewal failure notices and manage the ACME account.  
 * CUSTOMER_EMAIL - Not used  
 * PROJECT_ID - GCP project id  
 * ZONENAME - GCP DNS Zonename  
@@ -112,12 +110,10 @@ Environment variables [Some of these values are better described here](https://g
 * SSL_CERT_FILE - Default sslCert.pem  
 * CERT_CHAIN_FILE - Default certChain.pem  
 * LOCAL_MACHINE - set to 1 to have the certificate chain and signed certificate written to the local filesystem.  
----------------------------
 
 #### Mock infrastructure
 Deploy the infrasructure in `demo-terraform/`, if you do not already have existing infrastructure. This sets up a backend service with an internal load-balancer and a Cloud DNS Private zone. You can access the "frontend" instance via SSH from the Google console, or hit the public webserver instance. This terraform is going to look locally for the server private key and the certificate chain. If you've been using the "staging" directory URL for Let's Encrypt, you should expect the `frontend.<fqdn>` endpoint to success, but the `frontend.<fqdn>/protected` endpoint to fail due ot a bad certificate. This can also be confirmed by SSHing into the frontend instance and `curLing` the backend load-balancer from there.
 
-----------------------------------------------------------------------------  
 
 ### Rotating certificates 
 
