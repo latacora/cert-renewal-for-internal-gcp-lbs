@@ -1,6 +1,5 @@
 ## Automatically renewing and rotating certificates on Google Internal Load-balances with Let's Encrypt
-##### Problem:
-Google does not offer managed certificates for its internal load-balancers
+##### Problem: Google does not offer managed certificates for its internal load-balancers
 
 This repository exists primarily to demonstrate that it is possible to automate certificate rotation on Google internal load-balancers with minimal infratructure setup and without requiring your own CA. The code is this repository was originally intended for demostration purposes only and should not be put into your production environemnts without appropriate review.
 
