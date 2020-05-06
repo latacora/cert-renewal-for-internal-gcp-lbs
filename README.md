@@ -12,7 +12,7 @@ Rotation of the certs on target devices
 
 Parts: Google Storage for account key, server key, let's encrypt account info, signed cert and cert chain. A single bucket was used, however, you are free to use more.
 
-You can use a [.env](https://www.npmjs.com/package/dotenv) file to set environment variables for local usage.
+You can use a [.env](https://www.npmjs.com/package/dotenv) file to set environment variables for local use.
 
 -----------------
 
@@ -24,53 +24,54 @@ You can use a [.env](https://www.npmjs.com/package/dotenv) file to set environme
 `index.js`  
 The purpose of the `index.js` is to create a certificate signing request and get a signed certificate from Let's Encrypt using Google Cloud DNS.  
 
-based on this [walkthrough](https://git.rootprojects.org/root/acme.js/src/branch/master/examples/README.md)
-`index.js` looks for files in a GCP_BUCKET. Specfically the files defined by ACCOUNT_PRIV_KEY_PEM_FILE 'accountPrivateKey.pem' , SERVER_PRIV_KEY_PEM_FILE - 'serverPrivateKey.pem' LETS_ENCRYPT_ACCOUNT_INFO_FILE - 'letsEncryptAccountInfo.json'. This happens by default because the expectation is that you will be  running `index.js` in a Cloud Function normally. The `Deployment` section at the bottom outlines a strategy to deploy using Google Functions. The script takes the account key and Let's Encrypt account info, and initialzes the ACME client, then creates a certificate signing request (CSR) using the ACME client and the server private key. The ACME client is then used to request DNS valdation from Let's Encrypt using the `acme-dns-01-gcp` plugin, which uses the Google Cloud DNS service in project defined by PROJECT_ID and ZONENAME env vars. 
+Based on this [walkthrough](https://git.rootprojects.org/root/acme.js/src/branch/master/examples/README.md)
+`index.js` looks for files in a GCP_BUCKET. Specfically the files defined by ACCOUNT_PRIV_KEY_PEM_FILE, SERVER_PRIV_KEY_PEM_FILE, LETS_ENCRYPT_ACCOUNT_INFO_FILE, with the defaults of 'accountPrivateKey.pem', 'serverPrivateKey.pem', and  'letsEncryptAccountInfo.json', respectively if the environment variables are not set.
+The default  expectation is that you will be  running `index.js` in a Cloud Function. The `Deployment` section at the bottom outlines a strategy to deploy using Google Functions. If you wish that read files from the local filesystem, you'll need to modify the code yourself. 
+The script takes the account key and Let's Encrypt account info, initialzes the ACME client, then creates a certificate signing request (CSR) using the ACME client and the server private key. The ACME client then requests DNS valdation from Let's Encrypt using the `acme-dns-01-gcp` plugin, which uses the Google Cloud DNS service in project defined by PROJECT_ID and ZONENAME env vars, and writes the signed ssl certificate (SSL_CERT_FILE) and certificate chain (CERT_CHAIN_FILE) to the GCP_BUCKET bucket. 
+There is a slight dependency between that domain names that you request on your signed certificate and the infrastructure deployed from `demo-terraform`. `demo-terraform` creates DNS records for `frontend.<fqdn>` and `backend.<fqdn>`. If you don't need the infrastructure from `demo-terraform`, then you set the domain names to whatever you want. 
 
-Required 
-`index.js` will look for 3 files inside of a Google Storage bucket. You must define the Google Storage bucket with env vars or change the code to accept parameters.
-
-environment variables:
-MAINTAINER_EMAIL - author of the code  
-SUBSCRIBER_EMAIL - concat of the service provider to revieve renewal failure notices and manage the ACME account.  
-CUSTOMER_EMAIL - Not used  
-PROJECT_ID - GCP project id  
-ZONENAME - GCP DNS Zonename  
-GCP_BUCKET - GCP Storage bucket name  
-DOMAIN_NAMES - example: '["placeholder.example.com", "backend.placeholder.example.com", "frontend.placeholder.example.com", "\*.backend.placeholder.example.com"]'  
-CERT_ENV= - set to "production" to use the production Let's Encrypt domain url, else the staging domain url will be used  
-
-PACKAGE_AGENT_PREFIX - Optional should be an RFC72321-style user-agent string to append to the ACME client (ex: mypackage/v1.1.1)  
-
-ACCOUNT_PRIV_KEY_PEM_FILE - Default - accountPrivateKey.pem  
-SERVER_PRIV_KEY_PEM_FILE - Default - serverPrivateKey.pem  
-LETS_ENCRYPT_ACCOUNT_INFO_FILE - Default letsEncryptAccountInfo.json  
-SSL_CERT_FILE - Default sslCert.pem  
-CERT_CHAIN_FILE - Default certChain.pem  
-LOCAL_MACHINE - set to 1 to have the certificate chain and signed certificate written to the local filesystem.  
+Environment variables:
+* MAINTAINER_EMAIL - author of the code  
+* SUBSCRIBER_EMAIL - concat of the service provider to revieve renewal failure notices and manage the ACME account.  
+* CUSTOMER_EMAIL - Not used  
+* PROJECT_ID - GCP project id  
+* ZONENAME - GCP DNS Zonename  
+* GCP_BUCKET - GCP Storage bucket name  
+* DOMAIN_NAMES - example: '["placeholder.example.com", "backend.placeholder.example.com", "frontend.placeholder.example.com", "\*.backend.placeholder.example.com"]'  
+* CERT_ENV - set to "production" to use the production Let's Encrypt domain url, else the staging domain url will be used  
+* PACKAGE_AGENT_PREFIX - Optional should be an RFC72321-style user-agent string to append to the ACME client (ex: mypackage/v1.1.1)  
+* ACCOUNT_PRIV_KEY_PEM_FILE - Default - accountPrivateKey.pem  
+* SERVER_PRIV_KEY_PEM_FILE - Default - serverPrivateKey.pem  
+* LETS_ENCRYPT_ACCOUNT_INFO_FILE - Default letsEncryptAccountInfo.json  
+* SSL_CERT_FILE - Default sslCert.pem  
+* CERT_CHAIN_FILE - Default certChain.pem  
+* LOCAL_MACHINE - set to 1 to have the certificate chain and signed certificate written to the local filesystem.  
 
 Note:
-This specific method that you choose for renewing certificates does not create dependencies for rotation since they happen independently, however, renewing certificates usually implies that you are also interested in rotating certificates. I don't think I need to go into further detail here since you probably already know this is you're reading this. If you wish to choose another method for certificate renewal, you can review the [clients](https://letsencrypt.org/docs/client-options/) available on the Let's Encrypt website or write something yourself.
-You need to create a bucket to hold your certs.
-You can really use anything you want to hold certs or whatnot
-You need a Cloud DNS zone for dns domain validation
+This specific method that you choose for renewing certificates does not create dependencies for rotation since they happen independently, however, renewing certificates usually implies that you are also interested in rotating certificates. I don't think I need to go into further detail here since you probably already know this if you're reading this demo. If you wish to choose another method for certificate renewal, you can review the [clients](https://letsencrypt.org/docs/client-options/) available on the Let's Encrypt website or write something yourself.
 
 ---------------------------
-Deploy the infrasructure in `demo-terraform/` if you do not already have existing infrastructure
+
+#### Service infrastructure
+Deploy the infrasructure in `demo-terraform/`, if you do not already have existing infrastructure. This sets up a service with an internal load-balancer and a Cloud DNS Private zone. You can access the instance via SSH from the Google console, or hit the public webserver instance. 
 
 ### Certificate Rotation
 
 2. Rotation - Rotate certificates on the Google load-balancers using the Google Compute API.
 
-`update-certs.py`  
-PROJECT_ID  
-REGION  
-NETWORK - network name (could make this the url) 
-SUBNETWORK - subnetwork name (could make this url as well)  
-DNS_PRIVATE_ZONENAME  
-BACKEND_DNS_NAME - DNS name of backend load-balancer  
-CERT_CHAIN_FILE  
+You need to create a bucket to hold your certs.
+You can really use anything you want to hold certs or whatnot. The update-certs.py code should not be inserted into a production environment without proper review. This code was originally intended for demonstration purposes only and there exists many improvements upon the code.
 
+`update-certs.py`
+Environment variables:
+* PROJECT_ID - GCP project id
+* REGION - region of the services
+* NETWORK - network name (could make this the url) 
+* SUBNETWORK - subnetwork name (could make this url as well)  
+* DNS_PRIVATE_ZONENAME  - used to update the DNS record
+* BACKEND_DNS_NAME - DNS name of backend load-balancer  
+* SERVER_PRIV_KEY_PEM_FILE - Default serverPrivateKey.pem  
+* CERT_CHAIN_FILE - Default certChain.pem  
 
 [API](https://cloud.google.com/compute/docs/reference/rest/v1/forwardingRules/setTarget) for forwardingRules seems to indicate that a setTarget method exists, I kept getting the following error: 400 `Invalid target type TARGET_HTTPS_PROXY for forwarding rule in scope REGION` when trying to setTarget for forwarding rule. I guess it thinks that either the httpsProxy or the forwardingRule is global, but I'm using the regional methods. But works (200 response) when you setTarget to the targetHttpsProxy that is already set. 
 Also, the setSslCertificates function is only available on global targetHttpsProxies
@@ -130,7 +131,6 @@ LETS_ENCRYPT_ACCOUNT_INFO_FILE
 
 ---------------------------
 Deploy the infrasructure in `demo-terraform/` if you do not already have existing infrastructure
-
 
 ----------------------------------------------------------------------------
 `index.js`  
