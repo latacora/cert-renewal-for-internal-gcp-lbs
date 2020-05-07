@@ -31,7 +31,7 @@ async function get_cert(event, context) {
     console.log(ev, msg.altname || "", msg.status || "");
   }
 
-  //var ACME = require("acme");
+  //const ACME = require("acme");
   // This is using a local modified version so that create certificates doesn't return until the dns record remove returns
   const ACME = require("./@root/acme/acme.js");
   const acme = ACME.create({ maintainerEmail, packageAgent, notify });

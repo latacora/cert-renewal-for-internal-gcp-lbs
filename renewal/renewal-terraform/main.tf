@@ -18,7 +18,7 @@ resource "google_storage_bucket" "bucket" {
 resource "google_storage_bucket_object" "archive" {
   name   = var.renewal_zip_filename
   bucket = google_storage_bucket.bucket.name
-  source = "${var.renewal_zip_filename_path}/${var.renewal_zip_filename}"
+  source = "${var.renewal_zip_filename_path}${var.renewal_zip_filename}"
 }
 
 resource "google_cloudfunctions_function" "function" {
