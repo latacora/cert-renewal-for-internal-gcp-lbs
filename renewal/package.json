@@ -1,5 +1,5 @@
 {
-  "name": "cert-renewal-for-internal-gcp-lbs",
+  "name": "certificate-renewal-gcp",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -15,9 +15,8 @@
     "@root/keypairs": "^0.9.0",
     "@root/pem": "^1.0.4",
     "acme": "^3.0.3",
-    "acme-dns-01-gcp": "0.0.7",
+    "acme-dns-01-gcp": "0.0.8",
     "dotenv": "^8.2.0",
-    "googleapis": "^48.0.0",
-    "uuid": "^8.0.0"
+    "punycode": "^2.1.1"
   }
 }

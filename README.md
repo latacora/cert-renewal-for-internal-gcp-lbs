@@ -140,10 +140,13 @@ Environment variables:
 
 #### Deployment Strategies:
 
-Use a Google Function to rotate certificates for Forwarding Rules on the internal load-balancers.
-Takes about 5 minutes in the demo on my machine. Need to try it in a Google Function. Most of the time spent should be DNS validation time.  
+Use a Google Function to automatically renew certificates. You can use Google Cloud Scheduler to publish to a Pub/Sub topic for triggering renewals. (renewal-terraform)
+Use a Google Function to rotate certificates for Forwarding Rules on the internal load-balancers. (TODO terraform)
+
+Takes about 5 minutes.  
 AWS Lambda has a limit of 15 minutes
 Google Functions has a limit of 9 minutes
 
+Alternative to using environment variables:
 You could pass in env vars or pass in a payload to the google function that would be parsed  
 This example is using ENV VARs  
