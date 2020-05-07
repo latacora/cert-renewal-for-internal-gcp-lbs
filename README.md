@@ -10,15 +10,15 @@ Variables that are all UPPERCASE and snake_case are likely environment variables
 
 -----------------
 
-### Certificate Renewal `index.js`
+### Certificate Renewal `renewal/index.js`
 
 * Renewal - Uses [ACME.js](https://git.coolaj86.com/coolaj86/acme.js) with the [acme-dns-01-gcp](https://github.com/latacora/acme-dns-01-gcp) plugin to create and renew certificates. This relies on Google Cloud DNS and Google Storage. 
 
-The purpose of `index.js` is to create a certificate signing request and get a signed certificate from Let's Encrypt using Google Cloud DNS. Based on this [walkthrough](https://git.rootprojects.org/root/acme.js/src/branch/master/examples/README.md).
+The purpose of `renewal/index.js` is to create a certificate signing request and get a signed certificate from Let's Encrypt using Google Cloud DNS. Based on this [walkthrough](https://git.rootprojects.org/root/acme.js/src/branch/master/examples/README.md).
 
-`index.js` looks for files in a GCP_BUCKET. Specfically the files defined by ACCOUNT_PRIV_KEY_PEM_FILE, SERVER_PRIV_KEY_PEM_FILE, LETS_ENCRYPT_ACCOUNT_INFO_FILE, with defaults of `accountPrivateKey.pem`, `serverPrivateKey.pem`, and  `letsEncryptAccountInfo.json`, respectively if the environment variables are not set.
+`renewal/index.js` looks for files in a GCP_BUCKET. Specfically the files defined by ACCOUNT_PRIV_KEY_PEM_FILE, SERVER_PRIV_KEY_PEM_FILE, LETS_ENCRYPT_ACCOUNT_INFO_FILE, with defaults of `accountPrivateKey.pem`, `serverPrivateKey.pem`, and  `letsEncryptAccountInfo.json`, respectively if the environment variables are not set.
 
-The expectation is that you would run `index.js` in a Cloud Function. The `Deployment` section at the bottom outlines a basic strategy to deploy using Google Functions. If you wish to read files from the local filesystem in `index.js`, you'll need to modify the code yourself.
+The expectation is that you would run `renewal/index.js` in a Cloud Function. The `Deployment` section at the bottom outlines a basic strategy to deploy using Google Functions. If you wish to read files from the local filesystem in `index.js`, you'll need to modify the code yourself.
 
 High-level overview of the process for renewing certs using Let's Encrypt and an ACME compliant client:
 1. Initialze the ACME client using the account private key and Let's Encrypt account info.
@@ -33,13 +33,13 @@ There is a slight dependency between that domain names that you request on your 
 You can pick any method that you wish for renewing certificates. This demo is using [ACME.js](https://git.coolaj86.com/coolaj86/acme.js) with the [acme-dns-01-gcp](https://github.com/latacora/acme-dns-01-gcp) plugin so that everything can be deployed and managed within GCP. Even though renewal and rotation are independent, renewing certificates usually implies that you are also interested in rotating certificates. I don't think I need to go into further detail here since you probably already know this if you're reading this demo. If you wish to choose another method for certificate renewal, you can review the [clients](https://letsencrypt.org/docs/client-options/) available on the Let's Encrypt website or write something yourself.
 
 
-### Certificate Rotation `update-certs.js`
+### Certificate Rotation `rotation/index.js`
 
 * Rotation - Rotate certificates on the Google load-balancers using the Google Compute API.
 
-The `update-certs.js` script uses Google Cloud's API for rotating certificates on your internal load-balancers. `update-certs.js` expects the relevant certificates and server private key to live in an external data storage. You should have created a bucket in one of the previous steps or can choose to use another type of data store. The demo uses the same GCP_BUCKET used in the previous steps for this purpose.
+The `rotation/index.js` script uses Google Cloud's API for rotating certificates on your internal load-balancers. `rotation/index.js` expects the relevant certificates and server private key to live in an external data storage. You should have created a bucket in one of the previous steps or can choose to use another type of data store. The demo uses the same GCP_BUCKET used in the previous steps for this purpose.
 
-You can really use anything you want to hold certificates. Provided there are sufficient security mechanisms available for you to protect these resources. As a reminder, the `update-certs.py` code should not be inserted into a production environment without proper review. This code was originally intended for demonstration purposes only and requires serveral improvements before it is ready for production.
+You can really use anything you want to hold certificates. Provided there are sufficient security mechanisms available for you to protect these resources. As a reminder, the `rotation/index.js` code should not be inserted into a production environment without proper review. This code was originally intended for demonstration purposes only and requires serveral improvements before it is ready for production.
 
 High-level overview of the process for rotating certs for internal load-balancers:
 1. Create a new Region SSL certificate resource
@@ -98,7 +98,7 @@ __Environment variables: [Some of these values are better described here](https:
 
 ### Requesting a signed certificate
 
-`index.js` is the script responsible for renewing certificates. It uses [ACME.js](https://git.coolaj86.com/coolaj86/acme.js) with the [acme-dns-01-gcp](https://github.com/latacora/acme-dns-01-gcp) plugin to create and renew certificates. The private keys and Let's Encrypt account information are pulled from the GCP_BUCKET and the signed certificate and certificate chain are uploaded back to the same bucket. You can adjust this if you wish. It's recommended to set LOCAL_MACHINE=1 if you're going to use `demo-terraform/` to set up the mock environment, so that you'll have local copies of the certificate chain and the server private key for initial deployment.
+`renewal/index.js` is the script responsible for requesting/renewing certificates. It uses [ACME.js](https://git.coolaj86.com/coolaj86/acme.js) with the [acme-dns-01-gcp](https://github.com/latacora/acme-dns-01-gcp) plugin to create and renew certificates. The private keys and Let's Encrypt account information are pulled from the GCP_BUCKET and the signed certificate and certificate chain are uploaded back to the same bucket. You can adjust this if you wish. It's recommended to set LOCAL_MACHINE=1 if you're going to use `demo-terraform/` to set up the mock environment, so that you'll have local copies of the certificate chain and the server private key for initial deployment.
 
 **Environment variables: [Some of these values are better described here](https://git.coolaj86.com/coolaj86/acme.js#user-content-api-overview)**
 * MAINTAINER_EMAIL - author of the code  
@@ -123,8 +123,8 @@ Deploy the infrasructure in `demo-terraform/`, if you do not already have existi
 
 ### Rotating certificates 
 
-`update-certs.js` makes use of the Google Cloud API and assumes that new certs are available for it in the GCP_BUCKET by the 
-SERVER_PRIV_KEY_PEM_FILE and CERT_CHAIN_FILE names. If you deployed the mock infrastrucutre using `demo-terraform/` and the "staging" URL for Let's Encrypt initially, you can now switch to using CERT_ENV=production to obtain a real certificiate via `node index.js`. After receiving the new certificates, if you run `node update-certs.js` and it is successful, you should be able to hit the `frontend.<fqdn>/protected` endpoint and get a response.
+`rotation/index.js` makes use of the Google Cloud API and assumes that new certs are available for it in the GCP_BUCKET by the 
+SERVER_PRIV_KEY_PEM_FILE and CERT_CHAIN_FILE names. If you deployed the mock infrastrucutre using `demo-terraform/` and the "staging" URL for Let's Encrypt initially, you can now switch to using CERT_ENV=production to obtain a real certificiate via the renewal script. After receiving the new certificates, if you run the rotation script and if successful, you should be able to hit the `frontend.<fqdn>/protected` endpoint and get a response.
 
 Environment variables:
 * PROJECT_ID - GCP project id
@@ -140,7 +140,7 @@ Environment variables:
 
 #### Deployment Strategies:
 
-Use a Google Function to automatically renew certificates. You can use Google Cloud Scheduler to publish to a Pub/Sub topic for triggering renewals. (renewal-terraform)
+Use a Google Function to automatically renew certificates. You can use Google Cloud Scheduler to publish to a Pub/Sub topic for triggering renewals. (renewal/renewal-terraform). When creating the zip for Google Functions, you also need to include the `@root` package found in the repository.
 Use a Google Function to rotate certificates for Forwarding Rules on the internal load-balancers. (TODO terraform)
 
 Takes about 5 minutes.  
