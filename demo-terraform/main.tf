@@ -277,7 +277,7 @@ resource "google_compute_firewall" "allow-external" {
 #}
 
 data "google_dns_managed_zone" "public-zone" {
-  name = "public-zone"
+  name = var.public_zone_name
 }
 
 

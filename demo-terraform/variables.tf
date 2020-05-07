@@ -16,6 +16,10 @@ variable "fqdn" {
 	type = string
 	description = "fully qualified domain name of the dns zone that you will be creating"
 }
+variable "public_zone_name" {
+	type = string
+	description = "public zone name that you likely defined in init-terraform for dns validation"
+}
 variable "local-private-key-file" {
 	type = string
 	description = "would be used for initialization purposes. local file path of the server private key"
