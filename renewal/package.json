@@ -9,15 +9,15 @@
   "author": "Renzo Tomlinson",
   "license": "ISC",
   "dependencies": {
-    "@google-cloud/storage": "^4.7.0",
+    "@google-cloud/storage": "^5.6.0",
     "@root/acme": "^3.0.9",
     "@root/csr": "^0.8.1",
     "@root/keypairs": "^0.9.0",
     "@root/pem": "^1.0.4",
     "acme": "^3.0.3",
-    "acme-dns-01-gcp": "0.0.8",
+    "acme-dns-01-gcp": "^0.0.10",
     "dotenv": "^8.2.0",
-    "punycode": "^2.1.1",
-    "node-forge": ">=0.10.0"
+    "node-forge": ">=0.10.0",
+    "punycode": "^2.1.1"
   }
 }
