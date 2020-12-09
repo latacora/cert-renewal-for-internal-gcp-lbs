@@ -22,8 +22,8 @@ resource "google_storage_bucket_object" "archive" {
 }
 
 resource "google_cloudfunctions_function" "function" {
-  name        = "function-test"
-  description = "My function"
+  name        = "certificate-rotation-test"
+  description = "function to rotate certificates on internal loadbalancers"
   runtime     = "nodejs10"
 
   available_memory_mb   = 512

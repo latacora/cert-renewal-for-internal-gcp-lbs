@@ -17,6 +17,7 @@
     "acme": "^3.0.3",
     "acme-dns-01-gcp": "0.0.8",
     "dotenv": "^8.2.0",
-    "punycode": "^2.1.1"
+    "punycode": "^2.1.1",
+    "node-forge": ">=0.10.0"
   }
 }

@@ -1,10 +1,11 @@
 variable "project_id" {
 	type = string
 }
-variable "creds_file_path" {
-	type = string
-	default = ""
-}
+#variable "creds_file_path" {
+#	type = string
+#	default = ""
+#	description = "local path to the service account key"
+#}
 variable "region" {
 	type = string
 }
@@ -17,7 +18,7 @@ variable "fqdn" {
 }
 variable "certs_bucket_name" {
 	type = string
-	description = "google storage bucket name"
+	description = "google storage bucket name to create for this project"
 }
 variable "public_dns_zone_name" {
 	type = string
